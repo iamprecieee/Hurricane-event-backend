@@ -21,10 +21,7 @@ def create_event():
     creator_id = data.get("creator_id")
     thumbnail = data.get("thumbnail")
 
-    user = models.storage.get("User", id=creator_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-    else:
+    if user := models.storage.get("User", id=creator_id):
         event_info = {"title": title, "location": location,
                     "start_date": start_date, "end_date": end_date,
                     "start_time": start_time, "end_time": end_time,
@@ -40,6 +37,8 @@ def create_event():
         event = Event(**event_info)
         event.save()
         return jsonify({"message": "success", "event_id": event.id}), 201
+    else:
+        return jsonify({"message": "User not found"}), 404
 
 
 @api_views.route("/events")
@@ -65,13 +64,9 @@ def get_events():
 @api_views.route("/events/<event_id>")
 def get_event(event_id):
     """Get an event resource"""
-    event = models.storage.get("Event", event_id)
-    if event:
+    if event := models.storage.get("Event", event_id):
         event_list = event.to_dict()
-        if event.thumbnail:
-            event_list["thumbnail"] = event.thumbnail[0].url
-        else:
-            event_list["thumbnail"] = ""
+        event_list["thumbnail"] = event.thumbnail[0].url if event.thumbnail else ""
         return jsonify(event_list)
     return jsonify({"message": "Invalid Event ID"}), 404
 
@@ -99,30 +94,26 @@ def update_event(event_id):
         if not value:
             update_info.pop(key)
     if update_info:
-        event = models.storage.get("Event", event_id)
-        if event:
-            event.update(**update_info)
-            if thumbnail:
-                if event.thumbnail:
-                    prev = event.thumbnail[0]
-                    current = Image(image_url=thumbnail)
-                    event.thumbnail.remove(prev)
-                    event.thumbnail.append(current)
-                else:
-                    current = Image(image_url=thumbnail)
-                    event.thumbnail.append(current)
-            event.save()
-            return jsonify({"message": "success"}), 202
-        else:
+        if not (event := models.storage.get("Event", event_id)):
             return jsonify({"message": "Invalid Event ID"}), 404
+        event.update(**update_info)
+        if thumbnail:
+            if event.thumbnail:
+                prev = event.thumbnail[0]
+                current = Image(image_url=thumbnail)
+                event.thumbnail.remove(prev)
+            else:
+                current = Image(image_url=thumbnail)
+            event.thumbnail.append(current)
+        event.save()
+        return jsonify({"message": "success"}), 202
     return jsonify({"message": "unchanged"})
 
 
 @api_views.route("/events/<event_id>", methods=["DELETE"])
 def delete_event(event_id):
     """Deletes an event resource"""
-    event = models.storage.get("Event", event_id)
-    if event:
+    if event := models.storage.get("Event", event_id):
         models.storage.delete("Event", event_id)
         models.storage.save()
         return jsonify({"message": "success"})
@@ -141,8 +132,5 @@ def interested_events(user_id):
     for event in events.copy():
         image_obj = event["thumbnail"]
         event_idx = events.index(event)
-        if image_obj:
-            events[event_idx]["thumbnail"] = image_obj[0].url
-        else:
-            events[event_idx]["thumbnail"] = ""
+        events[event_idx]["thumbnail"] = image_obj[0].url if image_obj else ""
     return jsonify({'user': user.name, 'events': events})

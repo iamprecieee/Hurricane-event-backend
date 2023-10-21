@@ -57,7 +57,7 @@ class BaseModel:
                 value = date.fromisoformat(kwargs[key])
             if key.endswith("time"):
                 value = time.fromisoformat(kwargs[key])
-            if (key == "created_at") or (key == "updated_at"):
+            if key in ["created_at", "updated_at"]:
                 continue
             setattr(self, key, value)
         self.updated_at = datetime.utcnow()

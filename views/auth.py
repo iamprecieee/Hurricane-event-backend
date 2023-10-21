@@ -47,15 +47,13 @@ def authenticate_user():
     avatar = data.get("avatar")
 
     if email:
-        users = models.storage.search("User", email=email)
-        if users:
+        if users := models.storage.search("User", email=email):
             user = users[0]
+        elif name:
+            user = User(name, email, avatar)
+            user.save()
         else:
-            if name:
-                user = User(name, email, avatar)
-                user.save()
-            else:
-                return jsonify({"message": "No name found"}), 412
+            return jsonify({"message": "No name found"}), 412
         token = jwt.encode({
             'user': user.id,
             'email': user.email,

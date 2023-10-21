@@ -23,9 +23,7 @@ def create_group():
 
     all_groups = models.storage.all(Group)
 
-    title_exists = [group for group in all_groups if group.title == title]
-
-    if title_exists:
+    if title_exists := [group for group in all_groups if group.title == title]:
         return jsonify({'message': f'Group with title "{title}" already exists'}), 409
 
     # Checks for the User
@@ -40,10 +38,9 @@ def create_group():
             prev = new_group.image[0]
             current = Image(image_url=image)
             new_group.image.remove(prev)
-            new_group.image.append(current)
         else:
             current = Image(image_url=image)
-            new_group.image.append(current)
+        new_group.image.append(current)
     # Commit the changes to the database
     new_group.save()
 
@@ -52,10 +49,7 @@ def create_group():
     user.save()
 
     group_dict = new_group.to_dict()
-    if new_group.image:
-        group_dict["image"] = new_group.image[0].url
-    else:
-        group_dict["image"] = ""
+    group_dict["image"] = new_group.image[0].url if new_group.image else ""
     return jsonify(group_dict), 201
 
 
@@ -67,10 +61,7 @@ def get_group(group_id):
     if not group:
         return jsonify({"message": "Group not found"}), 404
     group_dict = group.to_dict()
-    if group.image:
-        image_url = group.image[0].url
-    else:
-        image_url = ""
+    image_url = group.image[0].url if group.image else ""
     group_dict["image"] = image_url
     return jsonify(group_dict), 200
 
@@ -82,8 +73,7 @@ def update_group(group_id):
     title = data.get("title")
     image = data.get("image")
 
-    group = models.storage.get("Group", group_id)
-    if group:
+    if group := models.storage.get("Group", group_id):
         kwargs = {}
         if title:
             kwargs["title"] = title
@@ -92,10 +82,9 @@ def update_group(group_id):
                 prev = group.image[0]
                 current = Image(image_url=image)
                 group.image.remove(prev)
-                group.image.append(current)
             else:
                 current = Image(image_url=image)
-                group.image.append(current)
+            group.image.append(current)
         if kwargs:
             group.update(**kwargs)
             group.save()
@@ -107,8 +96,7 @@ def update_group(group_id):
 @api_views.route("/groups/<group_id>", methods=["DELETE"])
 def delete_group(group_id):
     """Deletes a group resource"""
-    group = models.storage.get("Group", group_id)
-    if group:
+    if group := models.storage.get("Group", group_id):
         models.storage.delete("Group", group_id)
         models.storage.save()
         return jsonify({"message": "success"})
@@ -155,10 +143,7 @@ def get_all_groups():
     for group in group_list.copy():
         image_obj = group["image"]
         grp_idx = group_list.index(group)
-        if image_obj:
-            group_list[grp_idx]["image"] = image_obj[0].url
-        else:
-            group_list[grp_idx]["image"] = ""
+        group_list[grp_idx]["image"] = image_obj[0].url if image_obj else ""
     return jsonify(group_list)
 
 
@@ -177,20 +162,16 @@ def get_group_users(group_id):
 @api_views.route("/groups/users/<user_id>")
 def get_user_groups(user_id):
     """Gets all user groups"""
-    user = models.storage.get("User", user_id)
-    if user:
-        groups = user.groups
-        group_list = [group.to_dict() for group in groups]
-        [group.update({"image": models.storage.get("Group", group["id"]).image}) for group in group_list]
-        for group in group_list.copy():
-            image_obj = group["image"]
-            grp_idx = group_list.index(group)
-            if image_obj:
-                group_list[grp_idx]["image"] = image_obj[0].url
-            else:
-                group_list[grp_idx]["image"] = ""
-        return jsonify(group_list)
-    return jsonify({"message": "Invalid User ID"}), 404
+    if not (user := models.storage.get("User", user_id)):
+        return jsonify({"message": "Invalid User ID"}), 404
+    groups = user.groups
+    group_list = [group.to_dict() for group in groups]
+    [group.update({"image": models.storage.get("Group", group["id"]).image}) for group in group_list]
+    for group in group_list.copy():
+        image_obj = group["image"]
+        grp_idx = group_list.index(group)
+        group_list[grp_idx]["image"] = image_obj[0].url if image_obj else ""
+    return jsonify(group_list)
 
 
 @api_views.route("/groups/<group_id>/events/<event_id>", methods=["POST"])

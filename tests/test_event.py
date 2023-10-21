@@ -309,7 +309,8 @@ class TestViewsUser(unittest.TestCase):
         Fails to return events a user is interested in with invalid user ID
         """
         response = self.client.get(
-            f'/api/events/1/events', content_type='application/json')
+            '/api/events/1/events', content_type='application/json'
+        )
 
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(response.status_code, 404)

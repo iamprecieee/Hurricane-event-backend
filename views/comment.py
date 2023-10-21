@@ -32,10 +32,9 @@ def add_comment(event_id):
                 prev = comment.image[0]
                 current = Image(image_url=image)
                 comment.image.remove(prev)
-                comment.image.append(current)
             else:
                 current = Image(image_url=image)
-                comment.image.append(current)
+            comment.image.append(current)
             comment.save()
         return jsonify({"message": "success"}), 201
     return jsonify({"message": "Incomplete comment details"}), 412
@@ -44,22 +43,18 @@ def add_comment(event_id):
 @api_views.route("/events/<event_id>/comments")
 def get_comment(event_id):
     """Gets comments of an event"""
-    event = models.storage.get("Event", event_id)
-    if event:
-        comments = event.comments
-        comment_list = [comment.to_dict() for comment in comments]
-        [comment.update({"image": models.storage.get("Comment", comment["id"]).image}) for comment in comment_list]
-        for comment in comment_list.copy():
-            image_obj = comment["image"]
-            comm_idx = comment_list.index(comment)
-            if image_obj:
-                comment_list[comm_idx]["image"] = image_obj[0].url
-            else:
-                comment_list[comm_idx]["image"] = ""
-            user = models.storage.get("User", comment["user_id"])
-            comment_list[comm_idx]["user"] = {"name": user.name, "avatar": user.avatar}
-        return jsonify(comment_list)
-    return jsonify({"message": "Invalid Event ID"}), 404
+    if not (event := models.storage.get("Event", event_id)):
+        return jsonify({"message": "Invalid Event ID"}), 404
+    comments = event.comments
+    comment_list = [comment.to_dict() for comment in comments]
+    [comment.update({"image": models.storage.get("Comment", comment["id"]).image}) for comment in comment_list]
+    for comment in comment_list.copy():
+        image_obj = comment["image"]
+        comm_idx = comment_list.index(comment)
+        comment_list[comm_idx]["image"] = image_obj[0].url if image_obj else ""
+        user = models.storage.get("User", comment["user_id"])
+        comment_list[comm_idx]["user"] = {"name": user.name, "avatar": user.avatar}
+    return jsonify(comment_list)
 
 
 @api_views.route("/comments/<comment_id>/images", methods=["POST"])
@@ -67,17 +62,15 @@ def add_comment_img(comment_id):
     """Adds an image to a comment"""
     image = request.get_json().get("image")
 
-    comment = models.storage.get("Comment", comment_id)
-    if comment:
+    if comment := models.storage.get("Comment", comment_id):
         if image:
             if comment.image:
                 prev = comment.image[0]
                 current = Image(image_url=image)
                 comment.image.remove(prev)
-                comment.image.append(current)
             else:
                 current = Image(image_url=image)
-                comment.image.append(current)
+            comment.image.append(current)
             comment.save()
 
             return jsonify({"message": "success"}), 201
@@ -88,12 +81,8 @@ def add_comment_img(comment_id):
 @api_views.route("/comments/<comment_id>/images")
 def get_comment_img(comment_id):
     """Gets an image from comments"""
-    comment = models.storage.get("Comment", comment_id)
-    if comment:
-        if comment.image:
-            image_url = comment.image[0].url
-        else:
-            image_url = ""
+    if comment := models.storage.get("Comment", comment_id):
+        image_url = comment.image[0].url if comment.image else ""
         obj = {"image_url": image_url,
                "comment_id": comment_id}
         return jsonify(obj)
