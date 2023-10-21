@@ -28,12 +28,9 @@ class DBStorage:
         DB_NAME = getenv("DB_NAME")
 
         if DB_USER and DB_PASS and DB_HOST and DB_PORT and DB_NAME:
-            self.__engine = create_engine("mysql+mysqldb://{}:{}@{}:{}/{}"
-                                          .format(DB_USER,
-                                                  DB_PASS,
-                                                  DB_HOST,
-                                                  DB_PORT,
-                                                  DB_NAME))
+            self.__engine = create_engine(
+                f"mysql+mysqldb://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            )
         else:
             self.__engine = create_engine("sqlite:///sampleEVENTAPP.db") # Before running tests, please change this to "sqlite:///testEVENTAPP.db"
 

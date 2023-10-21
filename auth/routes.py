@@ -36,8 +36,7 @@ def authenticate_user():
     token_email = data.get('email')
 
     if email == token_email:
-        users = models.storage.search("User", email=email)
-        if users:
+        if users := models.storage.search("User", email=email):
             user = users[0]
 
             token = jwt.encode({

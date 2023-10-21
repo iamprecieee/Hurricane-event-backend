@@ -17,9 +17,7 @@ def users(id=None):
 
             return result, 201, {'Content-Type': 'application/json'}
         else:
-            # GET /users/{user_id}: Retrieve a specific user by ID
-            user = User.query.get(id)
-            if user:
+            if user := User.query.get(id):
                 data = user.serialize()
                 result = json.dumps(data, indent=4)
 
@@ -41,9 +39,7 @@ def users(id=None):
         return result, 201, {'Content-Type': 'application/json'}
 
     elif request.method == "PUT":
-        # PUT /users/{user_id}: Update an existing user
-        user = User.query.get(id)
-        if user:
+        if user := User.query.get(id):
             # Get data
             data = request.json
 
@@ -67,9 +63,7 @@ def users(id=None):
             return jsonify(message='User not found'), 404
 
     elif request.method == 'DELETE':
-        # DELETE /users/{user_id}: Delete a user
-        user = User.query.get(id)
-        if user:
+        if user := User.query.get(id):
             db.session.delete(user)
             db.session.commit()
             return jsonify(message='User has been deleted.')

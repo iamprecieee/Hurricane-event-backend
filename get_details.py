@@ -7,11 +7,7 @@ def to_dict(obj):
     data = {}
     for field in obj.__table__.columns:
         value = getattr(obj, field.name)
-        if isinstance(value, set):
-            # Convert sets to lists 
-            data[field.name] = list(value)
-        else:
-            data[field.name] = value
+        data[field.name] = list(value) if isinstance(value, set) else value
     return data
 @app.route("/api/groups/<group_id>", methods=["GET"])
 

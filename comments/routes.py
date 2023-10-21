@@ -15,10 +15,7 @@ def get_comment_images(comment_id):
         # This is basically meant to check if the comment exists in the database
         # gets the comment with the given comment_id returns the comment in success or None
         comment = models.storage.get(Comment, comment_id)
-        
-        if comment is None:
-            pass
-        
+
         # fetch from the database, all the images related to the comment
         images = models.storage.getImages(Image, comment)
 

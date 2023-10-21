@@ -16,15 +16,13 @@ def authenticate_user():
     avatar = data.get("avatar")
 
     if email:
-        users = models.storage.search("User", email=email)
-        if users:
+        if users := models.storage.search("User", email=email):
             user = users[0]
+        elif name:
+            user = User(name, email, avatar)
+            user.save()
         else:
-            if name:
-                user = User(name, email, avatar)
-                user.save()
-            else:
-                return jsonify({"message": "No name found"}), 412
+            return jsonify({"message": "No name found"}), 412
         token = jwt.encode({'user': user.id, 'email': user.email,
                             # 'exp': datetime.utcnow() + timedelta(hours=1)
                             }, current_app.secret_key, algorithm='HS256')
@@ -35,8 +33,7 @@ def authenticate_user():
 @api_views.route("/users/<user_id>")
 def get_profile(user_id):
     """Returns a user resource"""
-    user = models.storage.get("User", user_id)
-    if user:
+    if user := models.storage.get("User", user_id):
         return jsonify(user.to_dict())
     return jsonify({"message": "User ID does not exist"}), 404
 
@@ -44,23 +41,22 @@ def get_profile(user_id):
 @api_views.route("/users/<user_id>", methods=["PUT"])
 def update_profile(user_id):
     """Updates a user resource"""
-    user = models.storage.get("User", user_id)
-    if user:
-        data = request.get_json()
-        name = data.get("name")
-        email = data.get("email")
-        avatar = data.get("avatar")
+    if not (user := models.storage.get("User", user_id)):
+        return jsonify({"message": "User ID does not exist"}), 404
+    data = request.get_json()
+    name = data.get("name")
+    email = data.get("email")
+    avatar = data.get("avatar")
 
-        kwargs = {"name": name, "email": email, "avatar": avatar}
-        for key, value in kwargs.copy().items():
-            if not value:
-                kwargs.pop(key)
-        if kwargs:
-            user.update(**kwargs)
-            user.save()
-            return jsonify({"message": "Update was successful"}), 202
-        return jsonify({"message": "Unchanged"}), 200
-    return jsonify({"message": "User ID does not exist"}), 404
+    kwargs = {"name": name, "email": email, "avatar": avatar}
+    for key, value in kwargs.copy().items():
+        if not value:
+            kwargs.pop(key)
+    if kwargs:
+        user.update(**kwargs)
+        user.save()
+        return jsonify({"message": "Update was successful"}), 202
+    return jsonify({"message": "Unchanged"}), 200
 
 
 @api_views.route("/users/<user_id>/interests/<event_id>",
@@ -118,8 +114,7 @@ def invite_users(user_id, group_id):
     invalid_users = []
 
     for identity in users:
-        user = models.storage.search("User", email=identity)
-        if user:
+        if user := models.storage.search("User", email=identity):
             user = user[0]
             if user not in group.users:
                 group.users.append(user)
@@ -138,9 +133,7 @@ def authenticate_test():
     """Authenticates a test user
     """
     data = request.get_json()
-    email = data.get("email")
-
-    if email:
+    if email := data.get("email"):
         token = jwt.encode({'email': "test_email",
                             # 'exp': datetime.utcnow() + timedelta(hours=1)
                             }, current_app.secret_key, algorithm='HS256')
